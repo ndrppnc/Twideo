@@ -15,6 +15,7 @@ import com.amazonaws.services.cloudfront.model.Aliases;
 import com.amazonaws.services.cloudfront.model.CacheBehaviors;
 import com.amazonaws.services.cloudfront.model.CookiePreference;
 import com.amazonaws.services.cloudfront.model.CreateDistributionRequest;
+import com.amazonaws.services.cloudfront.model.CreateDistributionResult;
 import com.amazonaws.services.cloudfront.model.DefaultCacheBehavior;
 import com.amazonaws.services.cloudfront.model.DistributionConfig;
 import com.amazonaws.services.cloudfront.model.ForwardedValues;
@@ -44,9 +45,22 @@ public class Twideo {
 	
 	DynamoDBManager dy = new DynamoDBManager();
 	
+	String cfd = "";
+	
+	
 	public Twideo(){
 		try {
 			dy.init();
+			//dy.setup();
+			
+			Map<String,AttributeValue> map = dy.getCloudFrontDistribution();
+			
+			if(map == null){
+				cfd = createCloudFrontDistribution();
+				dy.putCloudFrontDistribution(cfd);
+			} else {
+				cfd = map.get("domain").getS();
+			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -55,30 +69,14 @@ public class Twideo {
 	
 	/* get object from CloudFront given key */
 	public String getVideo(String key){
-		/* CloudFront client */		
-		GetDistributionResult dr = cf.getDistribution(new GetDistributionRequest().withId("EPB7127KSCHJL"));
-
-		Map<String,String> retVal = new HashMap<String,String>();
-		Map<String,AttributeValue> result = dy.getItemAttributes("videos", key);
-		for(String r : result.keySet()){
-			retVal.put(r, result.get(r).getS());
-		}
-		
-		return "http://"+dr.getDistribution().getDomainName()+"/"+key;
+		/* CloudFront client */
+		return "http://"+cfd+"/"+key;
 	}
 	
 	/* get object from CloudFront given key */
 	public String getComment(String key){
-		/* CloudFront client */		
-		GetDistributionResult dr = cf.getDistribution(new GetDistributionRequest().withId("EPB7127KSCHJL"));
-		
-		Map<String,String> retVal = new HashMap<String,String>();
-		Map<String,AttributeValue> result = dy.getItemAttributes("comments", key);
-		for(String r : result.keySet()){
-			retVal.put(r, result.get(r).getS());
-		}
-		
-		return "http://"+dr.getDistribution().getDomainName()+"/"+key;
+		/* CloudFront client */
+		return "http://"+cfd+"/"+key;
 	}
 	
 	/* get video attributes of given key from the videos table */
@@ -133,7 +131,7 @@ public class Twideo {
 		return dy.getCommentsRange("comments",key,start,end);
 	}
 	
-	public static void createCloudFrontDistribution(){
+	public String createCloudFrontDistribution(){
 		/* CloudFront client */
 		AmazonCloudFrontClient cf = new AmazonCloudFrontClient(
 					new AWSCredentialsProviderChain(
@@ -172,7 +170,9 @@ public class Twideo {
 		cdr.setDistributionConfig(dc);
 		
 		/* create CloudFront distribution */
-		cf.createDistribution(cdr);
+		CreateDistributionResult dr = cf.createDistribution(cdr);
+		
+		return dr.getDistribution().getDomainName();
 	}
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
@@ -183,9 +183,6 @@ public class Twideo {
 		
 		// set up storage bucket
 		S3BucketManager S3BM = new S3BucketManager(s3, "twideos");
-		
-		// set up cloud front distribution
-		//createCloudFrontDistribution();
 		
 		// create bucket, if it doesn't exist
 		S3BM.createBucket();
