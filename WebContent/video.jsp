@@ -67,7 +67,7 @@ iBox.inherit_frames = false;
 				</a>
 			</div>
 			<div id="menu">
-				<a href="#inner_content" rel="ibox" title="Upload a video" class="item">+</a>
+				<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
 			</div>
 		</div>
 	</div>
@@ -92,7 +92,7 @@ iBox.inherit_frames = false;
 			</li>
 		</ul>
 		<h3 class="text-left">
-			Replies [<a href="#post_reply" rel="ibox" title="Post a reply to '<%=attr.get("name")%>'" class="item">Post a reply</a>]
+			Replies [<a href="#post_reply" rel="ibox&width=420" title="Post a reply to '<%=attr.get("name")%>'" class="item">Post a reply</a>]
 		</h3>
 		<%
 		String error = request.getParameter("error");

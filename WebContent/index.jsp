@@ -47,7 +47,7 @@ iBox.inherit_frames = false;
 				</a>
 			</div>
 			<div id="menu">
-				<a href="#inner_content" rel="ibox" title="Upload a video" class="item">+</a>
+				<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
 			</div>
 		</div>
 	</div>
