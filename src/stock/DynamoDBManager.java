@@ -1,20 +1,6 @@
 package stock;
-/*
-
- * Copyright 2012-2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License").
- * You may not use this file except in compliance with the License.
- * A copy of the License is located at
- *
- *  http://aws.amazon.com/apache2.0
- *
- * or in the "license" file accompanying this file. This file is distributed
- * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import com.amazonaws.AmazonClientException;
@@ -25,18 +11,24 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
+import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
+import com.amazonaws.services.dynamodbv2.model.PutItemResult;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.TableStatus;
 
 public class DynamoDBManager {
 
-    static AmazonDynamoDBClient dynamoDB;
+    private AmazonDynamoDBClient dynamoDB;
 
     /**
      * The only information needed to create a client are security credentials
@@ -49,7 +41,7 @@ public class DynamoDBManager {
      * @see com.amazonaws.auth.PropertiesCredentials
      * @see com.amazonaws.ClientConfiguration
      */
-    private static void init() throws Exception {
+    public void init() throws Exception {
     	/*
 		 * This credentials provider implementation loads your AWS credentials
 		 * from a properties file at the root of your classpath.
@@ -59,7 +51,7 @@ public class DynamoDBManager {
         dynamoDB.setRegion(usWest2);
     }
 
-    public static void main(String[] args) throws Exception {
+    public void setup() throws Exception {
         init();
 
         if(!tableExists("users")){
@@ -178,7 +170,7 @@ public class DynamoDBManager {
     }
     
     /* checks if a table is active */
-    private static boolean tableExists(String tableName) {
+    private boolean tableExists(String tableName) {
     	try {
             DescribeTableRequest request = new DescribeTableRequest().withTableName(tableName);
             TableDescription tableDescription = dynamoDB.describeTable(request).getTable();
@@ -190,9 +182,55 @@ public class DynamoDBManager {
         }
 		return false;
 	}
+    
+    /* get videos in the range [start,end] */
+    public LinkedList<String> getVideosRange(String tableName,int start, int end) { 	
+    	ScanRequest sr = new ScanRequest();
+    	sr.setTableName(tableName);
+    	sr.setLimit(10);
+    	
+    	ScanResult result = dynamoDB.scan(sr);
+    	
+    	LinkedList<String> retVal = new LinkedList<String>();
+    	
+    	for(Map<String,AttributeValue> item : result.getItems()){
+    		retVal.add(item.get("filename").getS());
+    	}
+		return retVal;
+	}
+    
+    /* get comments in the range [start,end] */
+    public LinkedList<String> getCommentsRange(String tableName,String key,int start, int end) { 	
+    	ScanRequest sr = new ScanRequest();
+    	sr.setTableName(tableName);
+    	sr.setLimit(10);
+    	
+    	Map<String,Condition> scanFilter = new HashMap<String,Condition>();
+    	Condition condition = new Condition()
+        .withComparisonOperator(ComparisonOperator.EQ.toString())
+        .withAttributeValueList(new AttributeValue().withS(key));
+    	
+    	scanFilter.put("video_id", condition);
+    	sr.setScanFilter(scanFilter);
+    	
+    	ScanResult result = dynamoDB.scan(sr);
+    	
+    	LinkedList<String> retVal = new LinkedList<String>();
+    	
+    	for(Map<String,AttributeValue> item : result.getItems()){
+    		retVal.add(item.get("filename").getS());
+    	}
+		return retVal;
+	}
+    
+    public Map<String, AttributeValue> getItemAttributes(String tableName,String key){
+    	Map<String, AttributeValue> map = new HashMap<String, AttributeValue>();
+        map.put("filename", new AttributeValue().withS(key));
+    	return dynamoDB.getItem(tableName, map).getItem();
+    }
 
 	/* create a new user */
-    private static Map<String, AttributeValue> newUser(String username, String email, String password) {
+    public Map<String, AttributeValue> newUser(String username, String email, String password) {
         Map<String, AttributeValue> user = new HashMap<String, AttributeValue>();
         user.put("username", new AttributeValue(username));
         user.put("email", new AttributeValue(email));
@@ -202,29 +240,33 @@ public class DynamoDBManager {
     }
     
     /* create a new video */
-    private static Map<String, AttributeValue> newVideo(String filename, String name, String description, String views, String date_posted) {
+    public void newVideo(String filename, String name, String description, String views, String date_posted) {
         Map<String, AttributeValue> video = new HashMap<String, AttributeValue>();
         video.put("filename", new AttributeValue(filename));
         video.put("name", new AttributeValue(name));
         video.put("description", new AttributeValue(description));
         video.put("views", new AttributeValue(views));
         video.put("date_posted", new AttributeValue(date_posted));
-
-        return video;
+        
+        PutItemRequest putItemRequest = new PutItemRequest("videos", video);
+        PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
+        System.out.println("Result: " + putItemResult);
     }
     
     /* create a new comment */
-    private static Map<String, AttributeValue> newComment(String filename, String views, String date_posted, String video) {
+    public void newComment(String filename, String views, String date_posted, String video) {
         Map<String, AttributeValue> comment = new HashMap<String, AttributeValue>();
         comment.put("video_id", new AttributeValue(video));
         comment.put("filename", new AttributeValue(filename));
         comment.put("views", new AttributeValue(views));
         comment.put("date_posted", new AttributeValue(date_posted));
 
-        return comment;
+        PutItemRequest putItemRequest = new PutItemRequest("comments", comment);
+        PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
+        System.out.println("Result: " + putItemResult);
     }
 
-    private static void waitForTableToBecomeAvailable(String tableName) {
+    public void waitForTableToBecomeAvailable(String tableName) {
         System.out.println("Waiting for " + tableName + " to become ACTIVE...");
 
         long startTime = System.currentTimeMillis();

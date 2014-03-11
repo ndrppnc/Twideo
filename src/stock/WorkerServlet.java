@@ -37,7 +37,8 @@ public class WorkerServlet extends HttpServlet {
             new InstanceProfileCredentialsProvider(),
             new ClasspathPropertiesFileCredentialsProvider()));
  
-    protected void doGet(HttpServletRequest request,HttpServletResponse response) 
+    @Override
+	protected void doGet(HttpServletRequest request,HttpServletResponse response) 
     		throws IOException,ServletException{
     	response.getWriter().write("<h1>Hello, world!</h1>");
 	}
@@ -57,6 +58,8 @@ public class WorkerServlet extends HttpServlet {
             // Parse the work to be done from the POST request body.
             
             WorkRequest workRequest = WorkRequest.fromJson(request.getInputStream());
+            
+            System.out.println(workRequest.toJson());
 
             // Simulate doing some work.
             
@@ -76,7 +79,7 @@ public class WorkerServlet extends HttpServlet {
             
             response.setStatus(200);
 
-        } catch (RuntimeException | InterruptedException exception) {
+        } catch (Exception exception) {
             
             // Signal to beanstalk that something went wrong while processing
             // the request. The work request will be retried several times in
@@ -84,10 +87,7 @@ public class WorkerServlet extends HttpServlet {
             // when writing to Amazon S3).
             
             response.setStatus(500);
-            try (PrintWriter writer =
-                 new PrintWriter(response.getOutputStream())) {
-                exception.printStackTrace(writer);
-            }
+            exception.printStackTrace();
         }
     }
     
