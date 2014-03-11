@@ -99,6 +99,8 @@ iBox.inherit_frames = false;
 		String success = request.getParameter("success");
 		if(error != null && error.equals("1")){
 			%><p class="bg-danger" style="font-weight:700;text-align:left;padding:10px;">Error, the file you tried to upload is not a video.</p><%
+		} else if(error != null && error.equals("2")){
+			%><p class="bg-danger" style="font-weight:700;text-align:left;padding:10px;">Please fill in all fields.</p><%
 		} else if(success != null){
 			%><p class="bg-primary" style="font-weight:700;text-align:left;padding:10px;">Your video was successfully uploaded.</p><%
 		}

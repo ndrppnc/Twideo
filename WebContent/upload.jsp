@@ -41,6 +41,7 @@
 
 	Map<String, String> params = new HashMap<String, String>();
 	boolean isVideo = true;
+	boolean allFields = true;
 		
 	// Process the uploaded items
 	Iterator<FileItem> iter = items.iterator();
@@ -63,22 +64,24 @@
 				
 				item.write(uploadedFile);
 				
-				
-				
 				System.out.println("File name: "
 						+ uploadedFile.getAbsolutePath());
 			} else {
 				isVideo = false;
 			}
 		} else {
-			System.out.println(item.getString() + " "
-					+ item.getFieldName());
-			params.put(item.getFieldName(), item.getString());
+			if(!item.getString().equals("")){
+				System.out.println(item.getString() + " "
+						+ item.getFieldName());
+				params.put(item.getFieldName(), item.getString());
+			} else {
+				allFields = false;
+			}
 		}
 	}
 
 	String replyID = request.getParameter("reply");
-	if(isVideo){
+	if(isVideo && allFields){
 		if(replyID != null && replyID != ""){
 			tw.putComment(uploadedFile.getName(), uploadedFile, replyID);
 			%><META http-equiv="refresh" content="0;URL=video.jsp?v=<%=replyID%>&success"><%
@@ -88,6 +91,14 @@
 			%><META http-equiv="refresh" content="0;URL=index.jsp?success"><%
 		}
 		System.out.println("Done.");
+	} else if(!allFields) {
+		if(replyID != null && replyID != ""){
+			System.out.println("Please fill in all fields.");
+			%><META http-equiv="refresh" content="0;URL=video.jsp?v=<%=replyID%>&error=2"><%
+		} else {
+			System.out.println("Please fill in all fields.");
+			%><META http-equiv="refresh" content="0;URL=index.jsp?error=2"><%
+		}
 	} else {
 		if(replyID != null && replyID != ""){
 			System.out.println("Error, the file you tried to upload is not a video.");
