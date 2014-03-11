@@ -29,6 +29,7 @@ import com.amazonaws.services.cloudfront.model.S3OriginConfig;
 import com.amazonaws.services.cloudfront.model.TrustedSigners;
 import com.amazonaws.services.cloudfront.model.ViewerProtocolPolicy;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.elastictranscoder.AmazonElasticTranscoderClient;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 public class Twideo {
@@ -43,16 +44,22 @@ public class Twideo {
 			new InstanceProfileCredentialsProvider(),
 			new ClasspathPropertiesFileCredentialsProvider()));
 	
+	AmazonElasticTranscoderClient et = new AmazonElasticTranscoderClient(
+			new AWSCredentialsProviderChain(
+			new InstanceProfileCredentialsProvider(),
+			new ClasspathPropertiesFileCredentialsProvider()));
+	
 	DynamoDBManager dy = new DynamoDBManager();
 	
 	String cfd = "";
 	
-	
 	public Twideo(){
 		try {
+			// init DynamoDB connection
 			dy.init();
 			//dy.setup();
 			
+			// get CloudFrontDistribution link
 			Map<String,AttributeValue> map = dy.getCloudFrontDistribution();
 			
 			if(map == null){
@@ -61,10 +68,34 @@ public class Twideo {
 			} else {
 				cfd = map.get("domain").getS();
 			}
+			
+			// create buckets
+			//createBuckets();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	/* create S3 buckets */
+	public void createBuckets(){
+		// create buckets
+		S3BucketManager S3BM = new S3BucketManager(s3, "twideos");
+		
+		// create bucket, if it doesn't exist
+		S3BM.createBucket();
+		
+		// create transcoded buckets
+		S3BM = new S3BucketManager(s3, "twideostrans");
+		
+		// create bucket, if it doesn't exist
+		S3BM.createBucket();
+		
+		// create thumbnail bucket
+		S3BM = new S3BucketManager(s3, "twideosthumbs");
+		
+		// create bucket, if it doesn't exist
+		S3BM.createBucket();
 	}
 	
 	/* get object from CloudFront given key */

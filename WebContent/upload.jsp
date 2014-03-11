@@ -32,7 +32,7 @@
 	ServletFileUpload upload = new ServletFileUpload(factory);
 
 	//Set overall request size constraint
-	upload.setSizeMax(5000 * 1024);
+	upload.setSizeMax(50000 * 1024);
 
 	//Parse the request
 	List<FileItem> items = upload.parseRequest(request);
@@ -58,9 +58,13 @@
 			|| item.getContentType().equals("video/mp4")
 			|| item.getContentType().equals("video/x-ms-wm")
 			|| item.getContentType().equals("video/avi")) {
-				uploadedFile = new File(item.getName());
+				uploadedFile = new File("/tmp/"+item.getName());
+				System.out.println(item.toString());
+				
 				item.write(uploadedFile);
-
+				
+				
+				
 				System.out.println("File name: "
 						+ uploadedFile.getAbsolutePath());
 			} else {
