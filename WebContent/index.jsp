@@ -74,16 +74,9 @@ iBox.inherit_frames = false;
 		colors[2] = "yellow";
 		colors[3] = "black";
 		
-		System.out.println(results.toString());
-		
 		for(String r : results){
 			
-			System.out.println("FUCK THIS SHIT "+r);
-			
 			Map<String,String> map = tw.getVideoAttributes(r);
-			System.out.println("r is "+r);
-			System.out.println(map.toString());
-			System.out.println(map.get("name"));
 			
 			%><li class="<%=colors[count%4]%>">
 				<video width="400" height="300" controls>
@@ -104,10 +97,10 @@ iBox.inherit_frames = false;
 		}		
 		%>
 		</ul>
+		<div style="text-align:center;padding:10px;">
+			Andrei Papancea &copy; 2014
+		</div>
 	</div>
-</div>
-<div style="text-align:center;padding:10px;">
-	Andrei Papancea &copy; 2014
 </div>
 <script>
 $(document).ready(function(){

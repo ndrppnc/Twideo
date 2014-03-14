@@ -17,6 +17,8 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
@@ -294,7 +296,7 @@ public class DynamoDBManager {
     public LinkedList<String> getCommentsRange(String tableName,String key,int start, int end) { 	
     	ScanRequest sr = new ScanRequest();
     	sr.setTableName(tableName);
-    	sr.setLimit(10);
+    	sr.setLimit(25);
     	
     	Map<String,Condition> scanFilter = new HashMap<String,Condition>();
     	Condition condition = new Condition()
@@ -314,35 +316,27 @@ public class DynamoDBManager {
 		return retVal;
 	}
     
-    public Map<String, AttributeValue> getItemAttributes(String tableName,String key){
-//    	ScanRequest sr = new ScanRequest();
-//    	sr.setTableName(tableName);
-//    	sr.setLimit(1);
-//    	
-//    	Map<String,Condition> scanFilter = new HashMap<String,Condition>();
-//    	Condition condition = new Condition()
-//        .withComparisonOperator(ComparisonOperator.EQ.toString())
-//        .withAttributeValueList(new AttributeValue().withS(key));
-//    	
-//    	scanFilter.put("filename", condition);
-//    	sr.setScanFilter(scanFilter);
-//    	
-//    	try {
-//    	
-//    	ScanResult result = dynamoDB.scan(sr);
-//    	System.out.println("HELLOOOOOOOOOOO "+key+" "+result.toString());
-//    	return result.getItems().get(0);
-//    	
-//    	} catch(Exception e){
-//    		e.printStackTrace();
-//    	}
-//    	//LinkedList<String> retVal = new LinkedList<String>();
-//    	
-//    	return null;
+    public Map<String, AttributeValue> getItemAttributes(String tableName,String key){    	
+    	Map<String, Condition> keyConditions = new HashMap<String, Condition>();
+
+    	Condition hashKeyCondition = new Condition()
+    	    .withComparisonOperator(ComparisonOperator.EQ)
+    	    .withAttributeValueList(new AttributeValue().withS(key));
+    	keyConditions.put("filename", hashKeyCondition);
+
+    	Condition rangeKeyCondition = new Condition()
+    	    .withComparisonOperator(ComparisonOperator.GE.toString())
+    	    .withAttributeValueList(new AttributeValue().withN("1"));
+    	keyConditions.put("index", rangeKeyCondition);
+
+    	QueryRequest queryRequest = new QueryRequest()
+    	    .withTableName("videos")
+    	    .withKeyConditions(keyConditions)
+    	    .withConsistentRead(true);
+
+    	QueryResult result = dynamoDB.query(queryRequest);
     	
-    	Map<String, AttributeValue> map = new HashMap<String, AttributeValue>();
-        map.put("filename", new AttributeValue().withS(key));
-    	return dynamoDB.getItem(tableName, map).getItem();
+    	return result.getItems().get(0);
     }
 
 	/* create a new user */

@@ -105,7 +105,7 @@ iBox.inherit_frames = false;
 			%><p class="bg-primary" style="font-weight:700;text-align:left;padding:10px;">Your video was successfully uploaded.</p><%
 		}
 		
-		LinkedList<String> results = tw.getComments(key, 0, 10);
+		LinkedList<String> results = tw.getComments(key, 1, 25);
 		int items = 0;
 		int count = 0;
 		String[] colors = new String[4];
@@ -135,6 +135,9 @@ iBox.inherit_frames = false;
 		}			
 		%>
 	</div>
+		<div style="text-align:center;padding:10px;">
+			Andrei Papancea &copy; 2014
+		</div>
 </div>
 <script>
 $(document).ready(function(){
