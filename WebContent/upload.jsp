@@ -10,6 +10,8 @@
 	pageEncoding="ISO-8859-1"%>
 
 <%@ page import="java.io.*,java.util.*, javax.servlet.*"%>
+<%@ page import="java.security.SecureRandom" %>
+<%@ page import="java.math.BigInteger" %>
 <%@ page import="javax.servlet.http.*"%>
 <%@ page import="org.apache.commons.fileupload.*"%>
 <%@ page import="org.apache.commons.fileupload.disk.*"%>
@@ -60,6 +62,9 @@
 			|| item.getContentType().equals("video/x-ms-wm")
 			|| item.getContentType().equals("video/avi")) {
 				uploadedFile = new File("/tmp/"+item.getName());
+				uploadedFile.setWritable(true, false);
+				uploadedFile.setReadable(true, false);
+				uploadedFile.setExecutable(true, false);
 				System.out.println(item.toString());
 				
 				item.write(uploadedFile);
@@ -83,10 +88,10 @@
 	String replyID = request.getParameter("reply");
 	if(isVideo && allFields){
 		if(replyID != null && replyID != ""){
-			tw.putComment(uploadedFile.getName(), uploadedFile, replyID);
+			tw.putComment((new BigInteger(130, new SecureRandom()).toString(32))+uploadedFile.getName(), uploadedFile, replyID);
 			%><META http-equiv="refresh" content="0;URL=video.jsp?v=<%=replyID%>&success"><%
 		} else {
-			tw.putVideo(uploadedFile.getName(), params.get("title"),
+			String result = tw.putVideo((new BigInteger(130, new SecureRandom()).toString(32))+uploadedFile.getName(), params.get("title"),
 				   params.get("description"), uploadedFile);
 			%><META http-equiv="refresh" content="0;URL=index.jsp?success"><%
 		}

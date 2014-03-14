@@ -29,14 +29,10 @@ input {
 	z-index:1000;
 	background:#fff;
 	padding-top:10px;
+	margin-bottom:20px;
 }
 #wrapper {
 	width:840px;
-	height:60px;
-}
-#main {
-	width:840px;
-	padding-top:20px;
 }
 
 .link {
@@ -93,6 +89,11 @@ input {
 .infobox h1 {
 	margin:0;
 	padding:0;
+}
+.wheel {
+	background:url('loading.gif') no-repeat center;
+	width:24px;
+	height:24px;
 }
 
 /* helpers */

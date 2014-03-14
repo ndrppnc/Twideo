@@ -1,4 +1,5 @@
 package stock;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -14,12 +15,17 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.CreateTableResult;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
+import com.amazonaws.services.dynamodbv2.model.Projection;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutItemResult;
+import com.amazonaws.services.dynamodbv2.model.QueryRequest;
+import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -102,6 +108,7 @@ public class DynamoDBManager {
 	            // Create a table with a primary hash key named 'name', which holds a string
 	            CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
 	                .withKeySchema(new KeySchemaElement().withAttributeName("filename").withKeyType(KeyType.HASH))
+	        	    .withKeySchema(new KeySchemaElement().withAttributeName("index").withKeyType(KeyType.RANGE))
 	                .withAttributeDefinitions(new AttributeDefinition().withAttributeName("filename").withAttributeType(ScalarAttributeType.S))
 	                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1L).withWriteCapacityUnits(1L));
 	            TableDescription createdTableDescription = dynamoDB.createTable(createTableRequest).getTableDescription();
@@ -141,6 +148,44 @@ public class DynamoDBManager {
 	            CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
 	                .withKeySchema(new KeySchemaElement().withAttributeName("filename").withKeyType(KeyType.HASH))
 	                .withAttributeDefinitions(new AttributeDefinition().withAttributeName("filename").withAttributeType(ScalarAttributeType.S))
+	                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1L).withWriteCapacityUnits(1L));
+	            TableDescription createdTableDescription = dynamoDB.createTable(createTableRequest).getTableDescription();
+	            System.out.println("Created Table: " + createdTableDescription);
+	
+	            // Wait for it to become active
+	            waitForTableToBecomeAvailable(tableName);
+	
+	            // Describe our new table
+	            DescribeTableRequest describeTableRequest = new DescribeTableRequest().withTableName(tableName);
+	            TableDescription tableDescription = dynamoDB.describeTable(describeTableRequest).getTable();
+	            System.out.println("Table Description: " + tableDescription);
+	        } catch (AmazonServiceException ase) {
+	            System.out.println("Caught an AmazonServiceException, which means your request made it "
+	                    + "to AWS, but was rejected with an error response for some reason.");
+	            System.out.println("Error Message:    " + ase.getMessage());
+	            System.out.println("HTTP Status Code: " + ase.getStatusCode());
+	            System.out.println("AWS Error Code:   " + ase.getErrorCode());
+	            System.out.println("Error Type:       " + ase.getErrorType());
+	            System.out.println("Request ID:       " + ase.getRequestId());
+	        } catch (AmazonClientException ace) {
+	            System.out.println("Caught an AmazonClientException, which means the client encountered "
+	                    + "a serious internal problem while trying to communicate with AWS, "
+	                    + "such as not being able to access the network.");
+	            System.out.println("Error Message: " + ace.getMessage());
+	        }
+        }
+        
+        if(!tableExists("tableinfo")){
+	    	/* create users table */
+	        try {
+	        	System.out.println("Start creating 'tableinfo' table...");
+	        	
+	        	String tableName = "tableinfo";
+	
+	            // Create a table with a primary hash key named 'type', which holds a string
+	            CreateTableRequest createTableRequest = new CreateTableRequest().withTableName(tableName)
+	                .withKeySchema(new KeySchemaElement().withAttributeName("type").withKeyType(KeyType.HASH))
+	                .withAttributeDefinitions(new AttributeDefinition().withAttributeName("type").withAttributeType(ScalarAttributeType.S))
 	                .withProvisionedThroughput(new ProvisionedThroughput().withReadCapacityUnits(1L).withWriteCapacityUnits(1L));
 	            TableDescription createdTableDescription = dynamoDB.createTable(createTableRequest).getTableDescription();
 	            System.out.println("Created Table: " + createdTableDescription);
@@ -222,13 +267,21 @@ public class DynamoDBManager {
 	}
     
     /* get videos in the range [start,end] */
-    public LinkedList<String> getVideosRange(String tableName,int start, int end) { 	
+    public LinkedList<String> getVideosRange(String tableName,int start, int end) {
     	ScanRequest sr = new ScanRequest();
     	sr.setTableName(tableName);
     	sr.setLimit(10);
     	
-    	ScanResult result = dynamoDB.scan(sr);
+    	Map<String,Condition> scanFilter = new HashMap<String,Condition>();
+    	Condition condition = new Condition()
+        .withComparisonOperator(ComparisonOperator.BETWEEN.toString())
+        .withAttributeValueList(new AttributeValue().withN(start+""),new AttributeValue().withN(end+""));
     	
+    	scanFilter.put("index", condition);
+    	sr.setScanFilter(scanFilter);
+    	
+    	ScanResult result = dynamoDB.scan(sr);
+   	
     	LinkedList<String> retVal = new LinkedList<String>();
     	
     	for(Map<String,AttributeValue> item : result.getItems()){
@@ -262,6 +315,31 @@ public class DynamoDBManager {
 	}
     
     public Map<String, AttributeValue> getItemAttributes(String tableName,String key){
+//    	ScanRequest sr = new ScanRequest();
+//    	sr.setTableName(tableName);
+//    	sr.setLimit(1);
+//    	
+//    	Map<String,Condition> scanFilter = new HashMap<String,Condition>();
+//    	Condition condition = new Condition()
+//        .withComparisonOperator(ComparisonOperator.EQ.toString())
+//        .withAttributeValueList(new AttributeValue().withS(key));
+//    	
+//    	scanFilter.put("filename", condition);
+//    	sr.setScanFilter(scanFilter);
+//    	
+//    	try {
+//    	
+//    	ScanResult result = dynamoDB.scan(sr);
+//    	System.out.println("HELLOOOOOOOOOOO "+key+" "+result.toString());
+//    	return result.getItems().get(0);
+//    	
+//    	} catch(Exception e){
+//    		e.printStackTrace();
+//    	}
+//    	//LinkedList<String> retVal = new LinkedList<String>();
+//    	
+//    	return null;
+    	
     	Map<String, AttributeValue> map = new HashMap<String, AttributeValue>();
         map.put("filename", new AttributeValue().withS(key));
     	return dynamoDB.getItem(tableName, map).getItem();
@@ -279,19 +357,43 @@ public class DynamoDBManager {
     
     /* create a new video */
     public void newVideo(String filename, String name, String description, String views, String date_posted) {
+    	int index = getCurrentIndex();
+    	
         Map<String, AttributeValue> video = new HashMap<String, AttributeValue>();
         video.put("filename", new AttributeValue(filename));
         video.put("name", new AttributeValue(name));
         video.put("description", new AttributeValue(description));
         video.put("views", new AttributeValue(views));
         video.put("date_posted", new AttributeValue(date_posted));
+        video.put("index", new AttributeValue().withN(index+""));
         
         PutItemRequest putItemRequest = new PutItemRequest("videos", video);
         PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
         System.out.println("Result: " + putItemResult);
+        
+        increaseCurrentIndex();
     }
     
-    /* create a new comment */
+    private void increaseCurrentIndex() {
+    	int current = getCurrentIndex();
+    	Map<String, AttributeValue> index = new HashMap<String, AttributeValue>();
+        index.put("type", new AttributeValue("current"));
+        index.put("value", new AttributeValue().withN((current+1)+""));
+        
+        PutItemRequest putItemRequest = new PutItemRequest("tableinfo", index);
+        PutItemResult putItemResult = dynamoDB.putItem(putItemRequest);
+        System.out.println("Result: " + putItemResult);
+	}
+
+	private int getCurrentIndex() {
+		Map<String, AttributeValue> map = new HashMap<String, AttributeValue>();
+        map.put("type", new AttributeValue().withS("current"));
+    	Map<String, AttributeValue> result = dynamoDB.getItem("tableinfo", map).getItem();
+    	return Integer.parseInt(result.get("value").getN());
+    	//return dynamoDB.getItem("tableinfo", map).getItem().get("value");
+	}
+
+	/* create a new comment */
     public void newComment(String filename, String views, String date_posted, String video) {
         Map<String, AttributeValue> comment = new HashMap<String, AttributeValue>();
         comment.put("video_id", new AttributeValue(video));

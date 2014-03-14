@@ -22,7 +22,7 @@ Date date = new Date(stamp.getTime());
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link href="css/style.css" rel="stylesheet" type="text/css" media="screen" charset="utf-8">
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
@@ -60,18 +60,18 @@ iBox.inherit_frames = false;
     
 <center>
 	<div id="wrapper">
-		<div id="header">
-			<div id="logo">
-				<a href="index.jsp">
-					TWIDEO
-				</a>
-			</div>
-			<div id="menu">
-				<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
+		<div style="height:60px;">
+			<div id="header">
+				<div id="logo">
+					<a href="index.jsp">
+						TWIDEO
+					</a>
+				</div>
+				<div id="menu">
+					<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
+				</div>
 			</div>
 		</div>
-	</div>
-	<div id="main">
 		<ul class="grid">
 			<li class="short black">
 				<video width="400" height="300" controls>
@@ -135,6 +135,7 @@ iBox.inherit_frames = false;
 		}			
 		%>
 	</div>
+</div>
 <script>
 $(document).ready(function(){
 	resize();
@@ -142,13 +143,11 @@ $(document).ready(function(){
 		var WH = $(window).height();
 		var WW = $(window).width();
 		if(WW >= 840){
-			$('#header').width('840px');
 			$('#wrapper').width('840px');
-			$('#main').width('840px');
+			$('#header').width('840px');
 		} else {
-			$('#header').width('420px');
 			$('#wrapper').width('420px');
-			$('#main').width('420px');		
+			$('#header').width('420px');
 		}
 	}
 	$(window).resize(function(){
@@ -156,6 +155,5 @@ $(document).ready(function(){
 	});
 });
 </script>
-</center>
 </body>
 </html>

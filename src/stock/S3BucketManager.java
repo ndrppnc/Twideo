@@ -1,10 +1,14 @@
 package stock;
 import java.io.File;
+
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 
 
 public class S3BucketManager {
@@ -24,15 +28,17 @@ public class S3BucketManager {
 		System.out.println("Done");
 	}
 	
-	public void putObject(String key, File file)
+	public String putObject(String key, File file)
 	{		
 		try {
 			//put object - bucket, key, value(file)
-			System.out.println("Putting object on S3");
-			s3.putObject(new PutObjectRequest(bucket_name, key, file).withCannedAcl(CannedAccessControlList.PublicRead));
+			System.out.println("Putting object '"+key+"' on S3");
+			PutObjectResult result = s3.putObject(new PutObjectRequest(bucket_name, key, file).withCannedAcl(CannedAccessControlList.PublicRead));
 			System.out.println("Done");
+			return result.toString();
 		} catch (Exception e) {
 			e.printStackTrace();
+			return e.getMessage();
 		}
 	}
 	

@@ -12,7 +12,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link href="css/style.css" rel="stylesheet" type="text/css" media="screen" charset="utf-8">
 <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
@@ -38,20 +38,21 @@ iBox.inherit_frames = false;
     </div>
 </div>
     
-<center>
+<div align="center">
 	<div id="wrapper">
-		<div id="header">
-			<div id="logo">
-				<a href="index.jsp">
-					TWIDEO
-				</a>
-			</div>
-			<div id="menu">
-				<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
+		<div style="height:60px;">
+			<div id="header">
+				<div id="logo">
+					<a href="index.jsp">
+						TWIDEO
+					</a>
+				</div>
+				<div id="menu">
+					<a href="#inner_content" rel="ibox&width=420" title="Upload a video" class="item">+</a>
+				</div>
 			</div>
 		</div>
-	</div>
-	<div id="main">
+		<ul class="grid">
 		<%
 		String error = request.getParameter("error");
 		String success = request.getParameter("success");
@@ -66,18 +67,24 @@ iBox.inherit_frames = false;
 		Twideo tw = new Twideo();
 		
 		LinkedList<String> results = tw.getRange(0, 10);
-		int items = 0;
 		int count = 0;
 		String[] colors = new String[4];
 		colors[0] = "cyan";
 		colors[1] = "magenta";
 		colors[2] = "yellow";
-		colors[3] = "black";				
+		colors[3] = "black";
+		
+		System.out.println(results.toString());
+		
 		for(String r : results){
-			if(items == 0){
-				%><ul class="grid"><%
-			}
+			
+			System.out.println("FUCK THIS SHIT "+r);
+			
 			Map<String,String> map = tw.getVideoAttributes(r);
+			System.out.println("r is "+r);
+			System.out.println(map.toString());
+			System.out.println(map.get("name"));
+			
 			%><li class="<%=colors[count%4]%>">
 				<video width="400" height="300" controls>
 				  	<source src="<%=tw.getVideo(r)%>" type="video/mp4">
@@ -92,33 +99,55 @@ iBox.inherit_frames = false;
 					</a>
 				</div>
 			</li><%
-			if(items == 1){
-				%></ul><%
-				items = 0;
-			} else
-				items++;
+			
 			count++;
-		}
-		if(items == 1){
-			%></ul><%
-		}			
+		}		
 		%>
+		</ul>
 	</div>
-</center>
+</div>
+<div style="text-align:center;padding:10px;">
+	Andrei Papancea &copy; 2014
+</div>
 <script>
 $(document).ready(function(){
+	/* infinite scroll */
+	var start = <%=(count+1)%>;
+	$(window).scroll(function() {
+		var wintop = $(window).scrollTop(), docheight = $(document).height(), winheight = $(window).height();
+        var  scrolltrigger = 0.95;
+
+        if  ((wintop/(docheight-winheight)) > scrolltrigger) {
+	    	var new_videos = '';
+	    	
+	    	if($('.loading').length == 0)
+		    	$('#wrapper').append('<div class="loading" style="padding:10px;">Loading <div class="wheel"></div></div>');
+	    	
+	    	$.get('fetch.jsp?s='+start,function(response){
+    			new_videos = response;
+    			
+    			if(new_videos != ''){
+    	    		$('ul').append(new_videos).fadeIn();  	    		
+    	    	}
+    			
+    			$('.loading').remove();
+    		});
+	    	
+	    	start = start+10;
+	    }
+	});
+	
+	/* resize if mobile phone */
 	resize();
 	function resize(){
 		var WH = $(window).height();
 		var WW = $(window).width();
 		if(WW >= 840){
-			$('#header').width('840px');
 			$('#wrapper').width('840px');
-			$('#main').width('840px');
+			$('#header').width('840px');
 		} else {
-			$('#header').width('420px');
 			$('#wrapper').width('420px');
-			$('#main').width('420px');		
+			$('#header').width('420px');
 		}
 	}
 	$(window).resize(function(){

@@ -29,15 +29,16 @@ import com.amazonaws.services.cloudfront.model.S3OriginConfig;
 import com.amazonaws.services.cloudfront.model.TrustedSigners;
 import com.amazonaws.services.cloudfront.model.ViewerProtocolPolicy;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.elastictranscoder.AmazonElasticTranscoderClient;
 import com.amazonaws.services.s3.AmazonS3Client;
 
 public class Twideo {
 	
-	AmazonS3Client s3 = new AmazonS3Client(
-			new AWSCredentialsProviderChain(
-            new InstanceProfileCredentialsProvider(),
-            new ClasspathPropertiesFileCredentialsProvider()));
+	AmazonS3Client s3 = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
 	
 	AmazonCloudFrontClient cf = new AmazonCloudFrontClient(
 			new AWSCredentialsProviderChain(
@@ -59,6 +60,9 @@ public class Twideo {
 			dy.init();
 			//dy.setup();
 			
+			// create buckets
+			//createBuckets();
+			
 			// get CloudFrontDistribution link
 			Map<String,AttributeValue> map = dy.getCloudFrontDistribution();
 			
@@ -68,9 +72,6 @@ public class Twideo {
 			} else {
 				cfd = map.get("domain").getS();
 			}
-			
-			// create buckets
-			//createBuckets();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -111,7 +112,7 @@ public class Twideo {
 	}
 	
 	/* get video attributes of given key from the videos table */
-	public Map<String,String> getVideoAttributes(String key){
+	public Map<String,String> getVideoAttributes(String key){		
 		Map<String,String> retVal = new HashMap<String,String>();
 		Map<String,AttributeValue> result = dy.getItemAttributes("videos", key);
 		for(String r : result.keySet()){
@@ -131,14 +132,16 @@ public class Twideo {
 	}
 	
 	/* put a file on S3 */
-	public void putVideo(String objName,String title,String description,File file){
+	public String putVideo(String objName,String title,String description,File file){
 		// put video in database
 		dy.newVideo(objName, title, description, "0", System.currentTimeMillis()+"");
 		
 		// set up storage bucket
 		S3BucketManager S3BM = new S3BucketManager(s3, "twideos");
 		
-		S3BM.putObject(objName, file);
+		String result = S3BM.putObject(objName, file);
+		
+		return result;
 	}
 	
 	/* put a file on S3 */
